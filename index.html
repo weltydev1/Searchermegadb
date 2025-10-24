@@ -51,6 +51,7 @@
                 border-radius: 0;
                 max-width: none;
                 max-height: none;
+                box-shadow: none;
             }
             body {
                 align-items: flex-start;
@@ -67,6 +68,9 @@
             gap: 1rem;
             font-weight: 700;
             font-size: 1.5rem;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
         
         .chat-messages {
@@ -91,15 +95,16 @@
         }
 
         .user-message {
-            background-color: #3b82f6; /* Blue */
+            background-color: #3b82f6;
             align-self: flex-end;
             text-align: right;
             color: white;
             border-bottom-right-radius: 0.25rem;
+            white-space: pre-wrap;
         }
 
         .ai-message {
-            background-color: #e5e7eb; /* Light gray */
+            background-color: #e5e7eb;
             align-self: flex-start;
             text-align: left;
             color: #1f2937;
@@ -112,7 +117,6 @@
             margin-top: 1rem;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
             transition: all 0.3s ease;
-            cursor: zoom-in;
         }
         
         .ai-image-wrapper:hover {
@@ -130,6 +134,7 @@
             display: flex;
             gap: 0.75rem;
             align-items: center;
+            margin-top: 0.75rem;
         }
         
         .input-field {
@@ -210,33 +215,48 @@
             background-repeat: no-repeat;
             background-position: right 1rem center;
             background-size: 1.25em;
+            cursor: pointer;
         }
         .select-field:focus {
             border-color: #6366f1;
             box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+        }
+
+        .prompt-preview {
+            background-color: #f1f5f9;
+            padding: 0.5rem 1rem;
+            border-radius: 0.75rem;
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+            border: 1px solid #cbd5e1;
+            color: #1f2937;
+            word-break: break-all; /* Ensure long string wraps */
+            font-family: monospace;
+            white-space: pre-wrap;
         }
     </style>
 </head>
 <body>
     <div class="chat-container">
         <div class="chat-header">
-            <i class="fas fa-magic text-2xl"></i>
-            <span>AI Image Creator</span>
+            <i class="fas fa-palette text-2xl"></i>
+            <span>AI Image Creator (Puter.js)</span>
         </div>
         <div id="chatMessages" class="chat-messages">
             <div class="ai-message">
                 <div class="flex items-start">
                     <i class="fas fa-robot text-purple-600 mr-3 mt-1"></i>
-                    <p class="pt-0.5">Привет! Я могу сгенерировать изображение по вашему описанию. Выберите модель и качество, затем введите запрос.</p>
+                    <p class="pt-0.5">Привет! Выберите модель, стиль и качество. Ваш запрос будет преобразован в структурированный промпт, чтобы обеспечить наилучший результат!</p>
                 </div>
             </div>
         </div>
         <div class="input-area">
+            <!-- Выбор Модели и Качества -->
             <div class="flex flex-col sm:flex-row gap-3">
                 <select id="modelSelect" class="select-field flex-1">
-                    <option value="gpt-image-1" selected>GPT Image-1</option>
-                    <option value="dall-e-3">DALL-E 3</option>
-                    <option value="gemini-2.5-flash-image-preview">Gemini Flash Image</option>
+                    <option value="gpt-image-1" selected>Модель: GPT Image-1</option>
+                    <option value="dall-e-3">Модель: DALL-E 3</option>
+                    <option value="gemini-2.5-flash-image-preview">Модель: Gemini Flash Image</option>
                 </select>
                 <select id="qualitySelect" class="select-field flex-1">
                     <option value="medium">Качество: Среднее</option>
@@ -244,6 +264,23 @@
                     <option value="low">Качество: Низкое</option>
                 </select>
             </div>
+            
+            <!-- Выбор Стиля -->
+            <div class="mt-3">
+                 <select id="styleSelect" class="select-field w-full">
+                    <option value="">-- Выбрать Стиль (Без стиля) --</option>
+                    <option value="Высокодетализированное фотореалистичное изображение, снятое на камеру Sony A7R V с объективом 85mm f/1.2, с мягким объемным освещением, глубокой резкостью и кинематографической цветокоррекцией. 8K разрешение, ультра-четкость, студийное качество.">Фотореализм 2.0</option>
+                    <option value="Кадр из широкоформатного фильма, снятый на пленку Kodak Portra 400, с соотношением сторон 2.35:1. Атмосферное, мрачное освещение, синие и оранжевые тона (teal and orange), глубина резкости, эффект Муди (Moody Film), высокий динамический диапазон.">Кинематографичный Фильм</option>
+                    <option value="Оптимистичный и яркий 3D рендеринг в стиле анимационной студии Disney/Pixar. Гладкие, округлые формы, выразительные персонажи, насыщенные, но гармоничные цвета, мягкие тени и высокое качество CGI, чистая топология, свет от облаков.">Дисней Мультфильм</option>
+                    <option value="Рисунок в стиле культовой японской анимационной студии Ghibli. Теплые, пастельные тона, внимание к деталям фона, ощущение ностальгии и чудес, акварельные эффекты, атмосферный свет, как в старых сказках, ручная прорисовка, шероховатость.">Аниме Ghibli</option>
+                    <option value="Изображение в стиле нео-нуар, киберпанк. Мокрые улицы, отражающие неоновые огни, плотный туман, яркие фиолетовые, розовые и голубые оттенки. Высокая детализация, футуристические конструкции и атмосфера Blade Runner, сложный ракурс, перегрузка светом.">Неоновый Киберпанк</option>
+                    <option value="Высокодетализированный цифровой концепт-арт, фэнтези. Эпическое освещение, резкие тени, проработка доспехов и текстур. Влияние художников Blizzard и Weta Workshop, динамичная композиция, богатая палитра, сложный передний план, туман.">Фэнтези Концепт-Арт</option>
+                    <option value="Картина, выполненная масляными красками на холсте. Видны мазки кисти, плотная текстура, глубокие цвета и сильный контраст, характерный для старых мастеров. Глубокая цветовая палитра, импрессионистические детали, классический стиль.">Масло на холсте</option>
+                    <option value="Эстетика минималистичного пиксель-арта, 16-битная графика, напоминающая старые консольные игры. Ограниченная палитра, чистые линии, четкие блоки цвета, ретро-стиль, низкое разрешение для ностальгического эффекта, изометрия.">Пиксель-Арт (Ретро)</option>
+                    <option value="Сложный и детализированный рисунок тушью. Четкие черные линии, штриховка, высокий контраст. Стиль, используемый в графических романах и классических комиксах, ощущение движения, детализация, мрачные тени.">Рисунок Тушью (Комикс)</option>
+                </select>
+            </div>
+
             <div class="input-group">
                 <input
                     type="text"
@@ -267,6 +304,9 @@
                     <i class="fas fa-times-circle"></i> Отмена
                 </button>
             </div>
+            <!-- Предварительный просмотр промпта -->
+            <div id="promptPreview" class="prompt-preview hidden"></div>
+            
             <div id="statusMessage" class="status-message hidden">
                 <i class="fas fa-spinner fa-spin"></i>
                 <span>Генерация изображения...</span>
@@ -279,14 +319,34 @@
         const promptInput = document.getElementById('promptInput');
         const modelSelect = document.getElementById('modelSelect');
         const qualitySelect = document.getElementById('qualitySelect');
+        const styleSelect = document.getElementById('styleSelect');
         const generateButton = document.getElementById('generateButton');
         const cancelButton = document.getElementById('cancelButton');
         const chatMessages = document.getElementById('chatMessages');
         const statusMessage = document.getElementById('statusMessage');
         const errorMessage = document.getElementById('errorMessage');
+        const promptPreview = document.getElementById('promptPreview'); // Новый элемент
 
         let isCancellationRequested = false;
         let abortController = null;
+
+        // Обновление предпросмотра промпта при вводе или смене стиля
+        function updatePromptPreview() {
+            const prompt = promptInput.value.trim();
+            const style = styleSelect.value.trim();
+            const styleName = styleSelect.options[styleSelect.selectedIndex].text;
+
+            if (prompt || style) {
+                const finalPrompt = `{style: "${style}", prompt: "${prompt}"}`;
+                promptPreview.textContent = finalPrompt;
+                promptPreview.classList.remove('hidden');
+            } else {
+                promptPreview.classList.add('hidden');
+            }
+        }
+        
+        promptInput.addEventListener('input', updatePromptPreview);
+        styleSelect.addEventListener('change', updatePromptPreview);
 
         function scrollToBottom() {
             chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -300,9 +360,9 @@
                 const icon = document.createElement('i');
                 icon.classList.add('fas', 'fa-user', 'text-white', 'ml-3', 'mt-1', 'order-2');
                 messageDiv.classList.add('flex', 'items-start', 'justify-end');
-                const contentWrapper = document.createElement('p');
+                const contentWrapper = document.createElement('div');
                 contentWrapper.classList.add('pt-0.5', 'order-1');
-                contentWrapper.innerText = content;
+                contentWrapper.innerHTML = content.replace(/\n/g, '<br>');
                 messageDiv.appendChild(contentWrapper);
                 messageDiv.appendChild(icon);
             } else {
@@ -321,6 +381,7 @@
                     contentWrapper.classList.add('flex', 'flex-col', 'gap-1');
                     const textNode = document.createElement('p');
                     textNode.innerHTML = 'Вот ваше сгенерированное изображение:';
+                    contentNode.classList.add('pt-0.5');
                     contentWrapper.appendChild(textNode);
                     
                     const imgWrapper = document.createElement('div');
@@ -346,6 +407,111 @@
         }
 
         function showErrorMessage(text) {
+            errorMessage.textContent = text;
+            errorMessage.classList.remove('hidden');
+        }
+
+        function hideErrorMessage() {
+            errorMessage.classList.add('hidden');
+        }
+
+        function enableControls() {
+            promptInput.disabled = false;
+            modelSelect.disabled = false;
+            qualitySelect.disabled = false;
+            styleSelect.disabled = false;
+            generateButton.disabled = false;
+            generateButton.classList.remove('hidden');
+            cancelButton.classList.add('hidden');
+        }
+
+        function disableControls() {
+            promptInput.disabled = true;
+            modelSelect.disabled = true;
+            qualitySelect.disabled = true;
+            styleSelect.disabled = true;
+            generateButton.disabled = true;
+            generateButton.classList.add('hidden');
+            cancelButton.classList.remove('hidden');
+        }
+
+        function cancelGeneration() {
+            isCancellationRequested = true;
+            if (abortController) {
+                // Пытаемся отменить fetch-запрос, если API это поддерживает
+                abortController.abort();
+            }
+            
+            hideStatus();
+            hideErrorMessage();
+            addMessage('ai', 'Генерация изображения отменена пользователем.');
+            enableControls();
+        }
+
+        async function generateImage() {
+            const prompt = promptInput.value.trim();
+            const model = modelSelect.value;
+            const quality = qualitySelect.value;
+            const style = styleSelect.value.trim(); 
+            const styleName = styleSelect.options[styleSelect.selectedIndex].text;
+
+            hideErrorMessage();
+            promptPreview.classList.add('hidden'); // Скрываем предпросмотр после отправки
+
+            if (!prompt) {
+                showErrorMessage('Пожалуйста, введите описание для генерации изображения.');
+                return;
+            }
+
+            // Формируем структурированный промпт для отправки в Puter.js
+            const finalPrompt = `{style: "${style.replace(/"/g, '\\"')}", prompt: "${prompt.replace(/"/g, '\\"')}"}`;
+
+            // Формируем текст для отображения в чате
+            const userMessageText = `**Ваш запрос:** ${prompt}\n**Выбранный Стиль:** ${styleName}\n**Сформированный промпт для AI:** \n<div class="prompt-preview">${finalPrompt}</div>`;
+            
+            addMessage('user', userMessageText);
+            promptInput.value = '';
+
+            isCancellationRequested = false;
+            abortController = new AbortController();
+            
+            disableControls();
+            showStatus(`Генерация изображения. Стиль: ${styleName}. Качество: ${quality.toUpperCase()}`);
+
+            try {
+                const options = {
+                    model: model,
+                    quality: quality,
+                };
+
+                // Отправляем структурированный промпт
+                const imageElement = await puter.ai.txt2img(finalPrompt, options);
+                
+                if (!isCancellationRequested) {
+                    imageElement.classList.add('w-full', 'h-auto');
+                    addMessage('ai', imageElement);
+                }
+
+            } catch (error) {
+                if (error.name === 'AbortError' || isCancellationRequested) {
+                    console.log('Генерация изображения была отменена.');
+                } else {
+                    console.error('Ошибка генерации изображения:', error);
+                    const errorText = error.message || 'Произошла неизвестная ошибка при генерации изображения.';
+                    showErrorMessage(`Ошибка: ${errorText}`);
+                    addMessage('ai', `<span class="font-semibold text-red-500">Ошибка:</span> Не удалось сгенерировать изображение. ${errorText}`);
+                }
+            } finally {
+                hideStatus();
+                enableControls();
+                abortController = null;
+            }
+        }
+    </script>
+</body>
+</html>
+
+                            function showErrorMessage(text) {
             errorMessage.textContent = text;
             errorMessage.classList.remove('hidden');
         }
