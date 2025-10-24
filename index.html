@@ -485,7 +485,6 @@
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
         
-        // Вспомогательная функция для форматирования JSON-подобной строки для отображения
         function formatPromptForDisplay(finalPrompt) {
             try {
                 let tempJsonString = finalPrompt.replace(/([\w]+):/g, '"$1":');
@@ -496,7 +495,6 @@
                 }
 
                 const parsed = JSON.parse(tempJsonString);
-                // Заменяем внутренние кавычки в значениях для чистоты, но сохраняем структуру
                 return JSON.stringify(parsed, null, 2).replace(/"/g, ''); 
             } catch (e) {
                 return finalPrompt;
@@ -528,11 +526,9 @@
                     contentWrapper.innerHTML = marked.parse(content);
                     messageDiv.appendChild(contentWrapper);
                 } else {
-                    // Content is an imageElement
                     const imgElement = content;
                     imgElement.classList.add('w-full', 'h-auto', 'rounded-lg', 'cursor-pointer');
                     
-                    // Прикрепляем метаданные к элементу изображения
                     if (metadata) {
                         imgElement.setAttribute('data-user-prompt', metadata.userPrompt);
                         imgElement.setAttribute('data-style-name', metadata.styleName);
@@ -566,7 +562,6 @@
             scrollToBottom();
         }
         
-        // Модальное окно: Открытие
         function openModal(imgElement) {
             currentDownloadUrl = imgElement.src;
             
@@ -582,14 +577,12 @@
             document.body.style.overflow = 'hidden';
         }
 
-        // Модальное окно: Закрытие
         function closeModal(event) {
             if (event && event.target !== imageModal) return;
             imageModal.classList.remove('open');
             document.body.style.overflow = '';
         }
 
-        // Модальное окно: Скачивание
         function downloadImage() {
             if (!currentDownloadUrl) return;
 
@@ -601,25 +594,25 @@
             document.body.removeChild(link);
         }
         
-        // Обработка ошибок: Очистка кеша и перезагрузка
+        // Функция для комплексной очистки кэша приложения и окружения puter.js
         function tryFixAndReload() {
-            // 1. Очистка Local Storage
+            // 1. Очистка Local Storage (основное хранилище для puter.js state и app data)
             localStorage.clear();
             
             // 2. Очистка Session Storage
             sessionStorage.clear();
             
-            // 3. Очистка Cookies
+            // 3. Очистка Cookies (для сброса сессионного состояния)
             document.cookie.split(";").forEach(function(c) {
-                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date(0).toUTCString() + ";path=/");
             });
 
-            showStatus('Очистка кэша, куки и перезагрузка страницы...');
+            showStatus('Выполняется комплексная очистка кэша, cookies и перезагрузка страницы для устранения ошибок...');
             
-            // Задержка для отображения сообщения перед перезагрузкой
+            // Перезагрузка страницы
             setTimeout(() => {
                 location.reload();
-            }, 1000); 
+            }, 1500); 
         }
 
         function showStatus(text) {
@@ -733,7 +726,7 @@
                     const errorText = error.message || 'Произошла неизвестная ошибка при генерации изображения.';
                     showErrorMessage(`Ошибка: ${errorText}`);
                     
-                    const fixButtonHtml = `<button onclick="tryFixAndReload()" class="text-indigo-600 font-bold ml-2 underline hover:text-indigo-700 transition-colors">Попробовать решить проблему (Очистка кеша)</button>`;
+                    const fixButtonHtml = `<button onclick="tryFixAndReload()" class="text-indigo-600 font-bold ml-2 underline hover:text-indigo-700 transition-colors">Попробовать решить проблему (Очистка кэша окружения)</button>`;
                     addMessage('ai', `*<span class="font-semibold text-red-500">Ошибка:</span> Не удалось сгенерировать изображение. (${errorText})* ${fixButtonHtml}`);
                 }
             } finally {
