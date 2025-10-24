@@ -165,7 +165,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            min-width: 50px; /* Reduced min-width for icon-only button */
+            min-width: 50px; 
             gap: 0.5rem;
             transition: all 0.2s ease-in-out;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
@@ -227,7 +227,7 @@
             box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
         }
 
-        /* Markdown Support */
+        /* Markdown Support Styles */
         .ai-message strong, .user-message strong,
         .ai-message b, .user-message b { 
             font-weight: 800;
@@ -245,6 +245,91 @@
         }
         .ai-message ul, .user-message ul { padding-left: 20px; margin: 10px 0; list-style-type: disc; }
         .ai-message li, .user-message li { margin-bottom: 5px; }
+
+        /* Fullscreen Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background-color: #ffffff;
+            border-radius: 1rem;
+            width: 95%;
+            max-width: 1200px;
+            height: 90vh;
+            display: flex;
+            flex-direction: row;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.open .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-image-area {
+            flex: 2;
+            padding: 1.5rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #000;
+        }
+
+        .modal-info-area {
+            flex: 1;
+            padding: 1.5rem;
+            background-color: #f8fafc;
+            overflow-y: auto;
+            border-left: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .modal-info-area h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 1rem;
+        }
+        
+        @media (max-width: 1024px) {
+            .modal-content {
+                flex-direction: column;
+                height: 95vh;
+            }
+            .modal-image-area {
+                flex: 1;
+                padding: 1rem;
+                max-height: 60%;
+            }
+            .modal-info-area {
+                flex: 1;
+                max-height: 40%;
+                border-left: none;
+                border-top: 1px solid #e2e8f0;
+            }
+        }
     </style>
 </head>
 <body>
@@ -330,9 +415,43 @@
             <div id="errorMessage" class="text-red-600 text-sm mt-3 hidden"></div>
         </div>
     </div>
+    
+    <!-- Fullscreen Modal for Image Preview and Download -->
+    <div id="imageModal" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-image-area">
+                <img id="modalImage" src="" alt="Сгенерированное изображение" class="max-h-full max-w-full object-contain rounded-lg">
+            </div>
+            <div class="modal-info-area">
+                <div class="info-content">
+                    <h3 class="mb-3">Информация о генерации</h3>
+                    <div id="modalInfo" class="text-sm text-gray-700 space-y-3">
+                        <p><strong>Модель:</strong> <span id="infoModel"></span></p>
+                        <p><strong>Стиль:</strong> <span id="infoStyle"></span></p>
+                        <p><strong>Исходный запрос:</strong> <span id="infoUserPrompt"></span></p>
+                        <p><strong>Полный промпт (для AI):</strong> <pre id="infoAIPrompt" class="!bg-white !p-0 !text-xs !overflow-x-visible"></pre></p>
+                    </div>
+                </div>
+                <div class="action-footer mt-6">
+                    <button 
+                        id="downloadButton"
+                        onclick="downloadImage()"
+                        class="w-full action-button generate-button !rounded-lg"
+                    >
+                        <i class="fas fa-download"></i> Скачать изображение
+                    </button>
+                    <button 
+                        onclick="closeModal()"
+                        class="w-full mt-3 py-2 px-4 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors font-semibold"
+                    >
+                        Закрыть
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
-        // Инициализация Marked.js для безопасности и правильного отображения Markdown
         marked.setOptions({
             gfm: true,
             breaks: true,
@@ -351,14 +470,40 @@
         const statusMessage = document.getElementById('statusMessage');
         const errorMessage = document.getElementById('errorMessage');
 
+        const imageModal = document.getElementById('imageModal');
+        const modalImage = document.getElementById('modalImage');
+        const infoModel = document.getElementById('infoModel');
+        const infoStyle = document.getElementById('infoStyle');
+        const infoUserPrompt = document.getElementById('infoUserPrompt');
+        const infoAIPrompt = document.getElementById('infoAIPrompt');
+
         let isCancellationRequested = false;
         let abortController = null;
+        let currentDownloadUrl = '';
 
         function scrollToBottom() {
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
+        
+        // Вспомогательная функция для форматирования JSON-подобной строки для отображения
+        function formatPromptForDisplay(finalPrompt) {
+            try {
+                let tempJsonString = finalPrompt.replace(/([\w]+):/g, '"$1":');
+                tempJsonString = tempJsonString.replace(/\\"/g, '"');
+                
+                if (!tempJsonString.startsWith('{') || !tempJsonString.endsWith('}')) {
+                     tempJsonString = '{' + tempJsonString.substring(1, tempJsonString.length - 1) + '}';
+                }
 
-        function addMessage(type, content) {
+                const parsed = JSON.parse(tempJsonString);
+                // Заменяем внутренние кавычки в значениях для чистоты, но сохраняем структуру
+                return JSON.stringify(parsed, null, 2).replace(/"/g, ''); 
+            } catch (e) {
+                return finalPrompt;
+            }
+        }
+
+        function addMessage(type, content, metadata = null) {
             const messageDiv = document.createElement('div');
             messageDiv.classList.add(type === 'user' ? 'user-message' : 'ai-message');
             
@@ -383,11 +528,25 @@
                     contentWrapper.innerHTML = marked.parse(content);
                     messageDiv.appendChild(contentWrapper);
                 } else {
+                    // Content is an imageElement
+                    const imgElement = content;
+                    imgElement.classList.add('w-full', 'h-auto', 'rounded-lg', 'cursor-pointer');
+                    
+                    // Прикрепляем метаданные к элементу изображения
+                    if (metadata) {
+                        imgElement.setAttribute('data-user-prompt', metadata.userPrompt);
+                        imgElement.setAttribute('data-style-name', metadata.styleName);
+                        imgElement.setAttribute('data-model', metadata.model);
+                        imgElement.setAttribute('data-final-prompt', metadata.finalPrompt);
+                        
+                        imgElement.onclick = () => openModal(imgElement);
+                    }
+
                     const contentWrapper = document.createElement('div');
                     contentWrapper.classList.add('flex', 'flex-col', 'gap-1');
                     
                     const textNode = document.createElement('p');
-                    textNode.innerHTML = 'Вот ваше сгенерированное изображение:';
+                    textNode.innerHTML = 'Вот ваше сгенерированное изображение (нажмите для просмотра):';
                     textNode.classList.add('pt-0.5');
                     
                     const textWrapper = document.createElement('div');
@@ -396,7 +555,7 @@
                     
                     const imgWrapper = document.createElement('div');
                     imgWrapper.classList.add('ai-image-wrapper');
-                    imgWrapper.appendChild(content); 
+                    imgWrapper.appendChild(imgElement); 
                     contentWrapper.appendChild(imgWrapper);
 
                     messageDiv.appendChild(contentWrapper);
@@ -405,6 +564,62 @@
             
             chatMessages.appendChild(messageDiv);
             scrollToBottom();
+        }
+        
+        // Модальное окно: Открытие
+        function openModal(imgElement) {
+            currentDownloadUrl = imgElement.src;
+            
+            modalImage.src = imgElement.src;
+            infoModel.textContent = imgElement.getAttribute('data-model') || 'Неизвестно';
+            infoStyle.textContent = imgElement.getAttribute('data-style-name') || 'Неизвестно';
+            infoUserPrompt.textContent = imgElement.getAttribute('data-user-prompt') || 'Неизвестно';
+
+            const finalPrompt = imgElement.getAttribute('data-final-prompt') || '{}';
+            infoAIPrompt.textContent = formatPromptForDisplay(finalPrompt);
+
+            imageModal.classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+
+        // Модальное окно: Закрытие
+        function closeModal(event) {
+            if (event && event.target !== imageModal) return;
+            imageModal.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+
+        // Модальное окно: Скачивание
+        function downloadImage() {
+            if (!currentDownloadUrl) return;
+
+            const link = document.createElement('a');
+            link.href = currentDownloadUrl;
+            link.download = `yana-ai-image-${Date.now()}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        // Обработка ошибок: Очистка кеша и перезагрузка
+        function tryFixAndReload() {
+            // 1. Очистка Local Storage
+            localStorage.clear();
+            
+            // 2. Очистка Session Storage
+            sessionStorage.clear();
+            
+            // 3. Очистка Cookies
+            document.cookie.split(";").forEach(function(c) {
+                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+            });
+
+            showStatus('Очистка кэша, куки и перезагрузка страницы...');
+            
+            // Задержка для отображения сообщения перед перезагрузкой
+            setTimeout(() => {
+                location.reload();
+            }, 1000); 
         }
 
         function showStatus(text) {
@@ -458,7 +673,7 @@
         }
 
         async function generateImage() {
-            const prompt = promptInput.value.trim();
+            const userPrompt = promptInput.value.trim();
             const model = modelSelect.value;
             const quality = qualitySelect.value;
             const style = styleSelect.value.trim(); 
@@ -466,34 +681,17 @@
 
             hideErrorMessage();
 
-            if (!prompt) {
+            if (!userPrompt) {
                 showErrorMessage('Пожалуйста, введите описание для генерации изображения.');
                 return;
             }
 
-            const finalPrompt = `{style: "${style.replace(/"/g, '\\"')}", prompt: "${prompt.replace(/"/g, '\\"')}"}`;
+            const finalPrompt = `{style: "${style.replace(/"/g, '\\"')}", prompt: "${userPrompt.replace(/"/g, '\\"')}"}`;
 
-            let structuredPromptDisplay;
-            try {
-                // Пытаемся безопасно парсить и форматировать для отображения
-                // Используем небольшую хитрость для форматирования JSON-подобной строки, если она соответствует минимальным требованиям
-                let tempJsonString = finalPrompt.replace(/([\w]+):/g, '"$1":');
-                // Добавляем очистку от потенциальных экранированных кавычек, которые могут мешать парсингу JSON
-                tempJsonString = tempJsonString.replace(/\\"/g, '"');
-                
-                // Проверяем, начинается ли и заканчивается ли строка фигурными скобками
-                if (!tempJsonString.startsWith('{') || !tempJsonString.endsWith('}')) {
-                     tempJsonString = '{' + tempJsonString.substring(1, tempJsonString.length - 1) + '}';
-                }
-
-                const parsed = JSON.parse(tempJsonString);
-                structuredPromptDisplay = JSON.stringify(parsed, null, 2).replace(/"/g, ''); // Удаляем кавычки для чистоты JSON-подобного стиля
-            } catch (e) {
-                structuredPromptDisplay = finalPrompt; // Если парсинг не удался, отображаем исходную строку
-            }
+            const structuredPromptDisplay = formatPromptForDisplay(finalPrompt);
 
             const userMessageText = 
-                `**Ваш запрос:** ${prompt}\n\n` + 
+                `**Ваш запрос:** ${userPrompt}\n\n` + 
                 `**Выбранный Стиль:** *${styleName}*\n\n` + 
                 `**Сформированный промпт для AI:** \n\n` +
                 '```json\n' + 
@@ -518,8 +716,13 @@
                 const imageElement = await puter.ai.txt2img(finalPrompt, options);
                 
                 if (!isCancellationRequested) {
-                    imageElement.classList.add('w-full', 'h-auto', 'rounded-lg');
-                    addMessage('ai', imageElement);
+                    const metadata = {
+                        userPrompt,
+                        styleName,
+                        model,
+                        finalPrompt
+                    };
+                    addMessage('ai', imageElement, metadata);
                 }
 
             } catch (error) {
@@ -529,7 +732,9 @@
                     console.error('Ошибка генерации изображения:', error);
                     const errorText = error.message || 'Произошла неизвестная ошибка при генерации изображения.';
                     showErrorMessage(`Ошибка: ${errorText}`);
-                    addMessage('ai', `*<span class="font-semibold text-red-500">Ошибка:</span> Не удалось сгенерировать изображение. Пожалуйста, проверьте консоль для получения подробной информации. (${errorText})*`);
+                    
+                    const fixButtonHtml = `<button onclick="tryFixAndReload()" class="text-indigo-600 font-bold ml-2 underline hover:text-indigo-700 transition-colors">Попробовать решить проблему (Очистка кеша)</button>`;
+                    addMessage('ai', `*<span class="font-semibold text-red-500">Ошибка:</span> Не удалось сгенерировать изображение. (${errorText})* ${fixButtonHtml}`);
                 }
             } finally {
                 hideStatus();
