@@ -3,22 +3,437 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Перехватчик</title>
-    <script type="text/javascript">
-        // Укажите URL сайта, на который нужно сделать перенаправление
-        var targetUrl = "http://14vkccr6f.localto.net:5601";
-
-        // Функция перенаправления
-        function redirect() {
-            window.location.href = targetUrl;
+    <title>AI Генератор Изображений (Puter.js)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://js.puter.com/v2/"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        // Перенаправление через 2 секунды
-        setTimeout(redirect, 2000);
-    </script>
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 0; 
+            margin: 0;
+        }
+
+        .chat-container {
+            background-color: #ffffff;
+            border-radius: 2rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), 0 5px 15px rgba(0, 0, 0, 0.15);
+            width: 100%;
+            max-width: 700px;
+            height: 95vh;
+            max-height: 900px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: all 0.3s ease-in-out;
+        }
+
+        @media (max-width: 768px) {
+            .chat-container {
+                height: 100vh;
+                border-radius: 0;
+                max-width: none;
+                max-height: none;
+            }
+            body {
+                align-items: flex-start;
+                padding: 0;
+            }
+        }
+
+        .chat-header {
+            background: linear-gradient(90deg, #6366f1, #8b5cf6);
+            color: white;
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+        
+        .chat-messages {
+            flex-grow: 1;
+            padding: 1rem 1.5rem;
+            overflow-y: auto;
+            background-color: #f9fafb;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .user-message, .ai-message {
+            max-width: 85%;
+            padding: 1rem;
+            border-radius: 1.25rem;
+            word-wrap: break-word;
+            transition: all 0.3s ease-in-out;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            animation: fadeInUp 0.4s ease-out;
+        }
+
+        .user-message {
+            background-color: #3b82f6; /* Blue */
+            align-self: flex-end;
+            text-align: right;
+            color: white;
+            border-bottom-right-radius: 0.25rem;
+        }
+
+        .ai-message {
+            background-color: #e5e7eb; /* Light gray */
+            align-self: flex-start;
+            text-align: left;
+            color: #1f2937;
+            border-bottom-left-radius: 0.25rem;
+        }
+        
+        .ai-image-wrapper {
+            max-width: 100%;
+            border-radius: 0.75rem;
+            margin-top: 1rem;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+            cursor: zoom-in;
+        }
+        
+        .ai-image-wrapper:hover {
+            transform: scale(1.02);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .input-area {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid #e5e7eb;
+            background-color: #ffffff;
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+        
+        .input-field {
+            flex-grow: 1;
+            padding: 0.75rem 1.25rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 9999px;
+            outline: none;
+            transition: border-color 0.3s, box-shadow 0.3s;
+            font-size: 1rem;
+        }
+        
+        .input-field:focus {
+            border-color: #6366f1;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+        }
+
+        .action-button {
+            padding: 0.75rem 1rem;
+            border-radius: 9999px;
+            color: white;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 120px;
+            gap: 0.5rem;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .generate-button {
+            background-color: #6366f1;
+        }
+        .generate-button:hover:not(:disabled) {
+            background-color: #4f46e5;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 10px rgba(99, 102, 241, 0.4);
+        }
+        
+        .cancel-button {
+            background-color: #ef4444;
+        }
+        .cancel-button:hover:not(:disabled) {
+            background-color: #dc2626;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 10px rgba(239, 68, 68, 0.4);
+        }
+        
+        .action-button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: translateY(0);
+            box-shadow: none;
+        }
+
+        .status-message {
+            font-size: 0.95rem;
+            color: #6366f1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            padding: 0.5rem 0;
+            animation: pulse 1.5s infinite;
+        }
+        
+        .select-field {
+            padding: 0.75rem 1.25rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 9999px;
+            outline: none;
+            background-color: white;
+            transition: border-color 0.3s, box-shadow 0.3s;
+            font-size: 1rem;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%236366f1'%3E%3Cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 1.25em;
+        }
+        .select-field:focus {
+            border-color: #6366f1;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+        }
+    </style>
 </head>
 <body>
-    <h1>Пожалуйста, подождите...</h1>
-    <p>Через несколько секунд вы будете перенаправлены на другой сайт.</p>
+    <div class="chat-container">
+        <div class="chat-header">
+            <i class="fas fa-magic text-2xl"></i>
+            <span>AI Image Creator</span>
+        </div>
+        <div id="chatMessages" class="chat-messages">
+            <div class="ai-message">
+                <div class="flex items-start">
+                    <i class="fas fa-robot text-purple-600 mr-3 mt-1"></i>
+                    <p class="pt-0.5">Привет! Я могу сгенерировать изображение по вашему описанию. Выберите модель и качество, затем введите запрос.</p>
+                </div>
+            </div>
+        </div>
+        <div class="input-area">
+            <div class="flex flex-col sm:flex-row gap-3">
+                <select id="modelSelect" class="select-field flex-1">
+                    <option value="gpt-image-1" selected>GPT Image-1</option>
+                    <option value="dall-e-3">DALL-E 3</option>
+                    <option value="gemini-2.5-flash-image-preview">Gemini Flash Image</option>
+                </select>
+                <select id="qualitySelect" class="select-field flex-1">
+                    <option value="medium">Качество: Среднее</option>
+                    <option value="high">Качество: Высокое</option>
+                    <option value="low">Качество: Низкое</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <input
+                    type="text"
+                    id="promptInput"
+                    placeholder="Опишите изображение, которое хотите создать..."
+                    class="input-field"
+                    onkeydown="if(event.key === 'Enter') generateImage()"
+                >
+                <button
+                    id="generateButton"
+                    onclick="generateImage()"
+                    class="action-button generate-button"
+                >
+                    <i class="fas fa-paper-plane"></i> Отправить
+                </button>
+                <button
+                    id="cancelButton"
+                    onclick="cancelGeneration()"
+                    class="action-button cancel-button hidden"
+                >
+                    <i class="fas fa-times-circle"></i> Отмена
+                </button>
+            </div>
+            <div id="statusMessage" class="status-message hidden">
+                <i class="fas fa-spinner fa-spin"></i>
+                <span>Генерация изображения...</span>
+            </div>
+            <div id="errorMessage" class="error-message hidden"></div>
+        </div>
+    </div>
+
+    <script>
+        const promptInput = document.getElementById('promptInput');
+        const modelSelect = document.getElementById('modelSelect');
+        const qualitySelect = document.getElementById('qualitySelect');
+        const generateButton = document.getElementById('generateButton');
+        const cancelButton = document.getElementById('cancelButton');
+        const chatMessages = document.getElementById('chatMessages');
+        const statusMessage = document.getElementById('statusMessage');
+        const errorMessage = document.getElementById('errorMessage');
+
+        let isCancellationRequested = false;
+        let abortController = null;
+
+        function scrollToBottom() {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function addMessage(type, content) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add(type === 'user' ? 'user-message' : 'ai-message');
+            
+            if (type === 'user') {
+                const icon = document.createElement('i');
+                icon.classList.add('fas', 'fa-user', 'text-white', 'ml-3', 'mt-1', 'order-2');
+                messageDiv.classList.add('flex', 'items-start', 'justify-end');
+                const contentWrapper = document.createElement('p');
+                contentWrapper.classList.add('pt-0.5', 'order-1');
+                contentWrapper.innerText = content;
+                messageDiv.appendChild(contentWrapper);
+                messageDiv.appendChild(icon);
+            } else {
+                messageDiv.classList.add('flex', 'items-start');
+                const icon = document.createElement('i');
+                icon.classList.add('fas', 'fa-robot', 'text-purple-600', 'mr-3', 'mt-1');
+                messageDiv.appendChild(icon);
+
+                if (typeof content === 'string') {
+                    const contentWrapper = document.createElement('p');
+                    contentWrapper.classList.add('pt-0.5');
+                    contentWrapper.innerHTML = content;
+                    messageDiv.appendChild(contentWrapper);
+                } else {
+                    const contentWrapper = document.createElement('div');
+                    contentWrapper.classList.add('flex', 'flex-col', 'gap-1');
+                    const textNode = document.createElement('p');
+                    textNode.innerHTML = 'Вот ваше сгенерированное изображение:';
+                    contentWrapper.appendChild(textNode);
+                    
+                    const imgWrapper = document.createElement('div');
+                    imgWrapper.classList.add('ai-image-wrapper');
+                    imgWrapper.appendChild(content); 
+                    contentWrapper.appendChild(imgWrapper);
+
+                    messageDiv.appendChild(contentWrapper);
+                }
+            }
+            
+            chatMessages.appendChild(messageDiv);
+            scrollToBottom();
+        }
+
+        function showStatus(text) {
+            statusMessage.querySelector('span').textContent = text;
+            statusMessage.classList.remove('hidden');
+        }
+
+        function hideStatus() {
+            statusMessage.classList.add('hidden');
+        }
+
+        function showErrorMessage(text) {
+            errorMessage.textContent = text;
+            errorMessage.classList.remove('hidden');
+        }
+
+        function hideErrorMessage() {
+            errorMessage.classList.add('hidden');
+        }
+
+        function enableControls() {
+            promptInput.disabled = false;
+            modelSelect.disabled = false;
+            qualitySelect.disabled = false;
+            generateButton.disabled = false;
+            generateButton.classList.remove('hidden');
+            cancelButton.classList.add('hidden');
+        }
+
+        function disableControls() {
+            promptInput.disabled = true;
+            modelSelect.disabled = true;
+            qualitySelect.disabled = true;
+            generateButton.disabled = true;
+            generateButton.classList.add('hidden');
+            cancelButton.classList.remove('hidden');
+        }
+
+        function cancelGeneration() {
+            isCancellationRequested = true;
+            if (abortController) {
+                abortController.abort();
+            }
+            
+            hideStatus();
+            hideErrorMessage();
+            addMessage('ai', 'Генерация изображения отменена пользователем.');
+            enableControls();
+        }
+
+        async function generateImage() {
+            const prompt = promptInput.value.trim();
+            const model = modelSelect.value;
+            const quality = qualitySelect.value;
+
+            hideErrorMessage();
+
+            if (!prompt) {
+                showErrorMessage('Пожалуйста, введите описание для генерации изображения.');
+                return;
+            }
+
+            addMessage('user', prompt);
+            promptInput.value = '';
+
+            isCancellationRequested = false;
+            abortController = new AbortController();
+            
+            disableControls();
+            showStatus('Генерация изображения (' + quality.toUpperCase() + ')...');
+
+            try {
+                const options = {
+                    model: model,
+                    quality: quality,
+                };
+
+                const imageElement = await puter.ai.txt2img(prompt, options);
+                
+                if (!isCancellationRequested) {
+                    imageElement.classList.add('w-full', 'h-auto');
+                    addMessage('ai', imageElement);
+                }
+
+            } catch (error) {
+                if (error.name === 'AbortError' || isCancellationRequested) {
+                    console.log('Генерация изображения была отменена.');
+                } else {
+                    console.error('Ошибка генерации изображения:', error);
+                    const errorText = error.message || 'Произошла неизвестная ошибка при генерации изображения.';
+                    showErrorMessage(`Ошибка: ${errorText}`);
+                    addMessage('ai', `<span class="font-semibold text-red-500">Ошибка:</span> Не удалось сгенерировать изображение. ${errorText}`);
+                }
+            } finally {
+                hideStatus();
+                enableControls();
+                abortController = null;
+            }
+        }
+    </script>
 </body>
 </html>
+
