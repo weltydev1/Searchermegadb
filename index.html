@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Генератор Изображений (Puter.js)</title>
+    <title>YaNAi - Генератор Изображений</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <script src="https://js.puter.com/v2/"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
         
         @keyframes fadeInUp {
             from { opacity: 0; transform: translateY(10px); }
@@ -22,7 +23,7 @@
 
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
+            background: #f0f4f9;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -33,16 +34,15 @@
 
         .chat-container {
             background-color: #ffffff;
-            border-radius: 2rem;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), 0 5px 15px rgba(0, 0, 0, 0.15);
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             width: 100%;
-            max-width: 700px;
+            max-width: 800px;
             height: 95vh;
             max-height: 900px;
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            transition: all 0.3s ease-in-out;
         }
 
         @media (max-width: 768px) {
@@ -56,18 +56,20 @@
             body {
                 align-items: flex-start;
                 padding: 0;
+                background: #ffffff;
             }
         }
 
         .chat-header {
-            background: linear-gradient(90deg, #6366f1, #8b5cf6);
-            color: white;
-            padding: 1.25rem 1.5rem;
+            background-color: #ffffff;
+            color: #1f2937;
+            padding: 1.5rem;
             display: flex;
             align-items: center;
-            gap: 1rem;
-            font-weight: 700;
-            font-size: 1.5rem;
+            justify-content: space-between;
+            font-weight: 800;
+            font-size: 1.6rem;
+            border-bottom: 1px solid #e5e7eb;
             position: sticky;
             top: 0;
             z-index: 10;
@@ -75,72 +77,75 @@
         
         .chat-messages {
             flex-grow: 1;
-            padding: 1rem 1.5rem;
+            padding: 1.5rem;
             overflow-y: auto;
-            background-color: #f9fafb;
+            background-color: #fcfcfc;
             display: flex;
             flex-direction: column;
-            gap: 1.25rem;
+            gap: 1.5rem;
             -webkit-overflow-scrolling: touch;
         }
 
         .user-message, .ai-message {
-            max-width: 85%;
-            padding: 1rem;
+            max-width: 95%;
+            padding: 0.75rem 1rem;
             border-radius: 1.25rem;
             word-wrap: break-word;
-            transition: all 0.3s ease-in-out;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
             animation: fadeInUp 0.4s ease-out;
+            font-size: 0.95rem;
         }
 
         .user-message {
-            background-color: #3b82f6;
+            background-color: #e0f2fe;
             align-self: flex-end;
             text-align: right;
-            color: white;
-            border-bottom-right-radius: 0.25rem;
-            white-space: pre-wrap;
+            color: #1e40af;
+            border-bottom-right-radius: 0.5rem;
+            border-top-right-radius: 0.25rem;
         }
 
         .ai-message {
-            background-color: #e5e7eb;
+            background-color: #f1f5f9;
             align-self: flex-start;
             text-align: left;
-            color: #1f2937;
-            border-bottom-left-radius: 0.25rem;
+            color: #334155;
+            border-bottom-left-radius: 0.5rem;
+            border-top-left-radius: 0.25rem;
         }
         
         .ai-image-wrapper {
             max-width: 100%;
             border-radius: 0.75rem;
             margin-top: 1rem;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
+            overflow: hidden;
+            display: inline-block;
         }
         
         .ai-image-wrapper:hover {
             transform: scale(1.02);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
         }
 
         .input-area {
-            padding: 1rem 1.5rem;
-            border-top: 1px solid #e5e7eb;
+            padding: 1.5rem;
             background-color: #ffffff;
+            border-top: 1px solid #e5e7eb;
         }
         
         .input-group {
             display: flex;
             gap: 0.75rem;
-            align-items: center;
-            margin-top: 0.75rem;
+            align-items: stretch;
+            margin-top: 1rem;
         }
         
         .input-field {
             flex-grow: 1;
             padding: 0.75rem 1.25rem;
-            border: 2px solid #e5e7eb;
+            border: 1px solid #cbd5e1;
             border-radius: 9999px;
             outline: none;
             transition: border-color 0.3s, box-shadow 0.3s;
@@ -148,31 +153,31 @@
         }
         
         .input-field:focus {
-            border-color: #6366f1;
-            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
         }
 
         .action-button {
-            padding: 0.75rem 1rem;
+            padding: 0.75rem 1.25rem;
             border-radius: 9999px;
             color: white;
             font-weight: 600;
             display: flex;
             align-items: center;
             justify-content: center;
-            min-width: 120px;
+            min-width: 50px; /* Reduced min-width for icon-only button */
             gap: 0.5rem;
             transition: all 0.2s ease-in-out;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
 
         .generate-button {
-            background-color: #6366f1;
+            background-color: #4f46e5;
         }
         .generate-button:hover:not(:disabled) {
-            background-color: #4f46e5;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 10px rgba(99, 102, 241, 0.4);
+            background-color: #6366f1;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(79, 70, 229, 0.3);
         }
         
         .cancel-button {
@@ -180,12 +185,12 @@
         }
         .cancel-button:hover:not(:disabled) {
             background-color: #dc2626;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 10px rgba(239, 68, 68, 0.4);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
         }
         
         .action-button:disabled {
-            opacity: 0.7;
+            opacity: 0.6;
             cursor: not-allowed;
             transform: translateY(0);
             box-shadow: none;
@@ -193,65 +198,75 @@
 
         .status-message {
             font-size: 0.95rem;
-            color: #6366f1;
+            color: #4f46e5;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 0.75rem;
-            padding: 0.5rem 0;
+            padding: 0.75rem 0 0 0;
             animation: pulse 1.5s infinite;
         }
         
         .select-field {
             padding: 0.75rem 1.25rem;
-            border: 2px solid #e5e7eb;
+            border: 1px solid #cbd5e1;
             border-radius: 9999px;
             outline: none;
             background-color: white;
             transition: border-color 0.3s, box-shadow 0.3s;
             font-size: 1rem;
             appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%236366f1'%3E%3Cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd'%3E%3C/path%3E%3C/svg%3E");
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%234f46e5'%3E%3Cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd'%3E%3C/path%3E%3C/svg%3E");
             background-repeat: no-repeat;
             background-position: right 1rem center;
             background-size: 1.25em;
             cursor: pointer;
         }
         .select-field:focus {
-            border-color: #6366f1;
-            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
         }
 
-        .prompt-preview {
-            background-color: #f1f5f9;
-            padding: 0.5rem 1rem;
-            border-radius: 0.75rem;
-            font-size: 0.85rem;
-            margin-top: 0.5rem;
-            border: 1px solid #cbd5e1;
-            color: #1f2937;
-            word-break: break-all; /* Ensure long string wraps */
-            font-family: monospace;
-            white-space: pre-wrap;
+        /* Markdown Support */
+        .ai-message strong, .user-message strong,
+        .ai-message b, .user-message b { 
+            font-weight: 800;
         }
+        .ai-message p, .user-message p { margin-top: 0.5rem; margin-bottom: 0.5rem; line-height: 1.4; }
+        .ai-message pre, .user-message pre { 
+            background-color: #e2e8f0; 
+            padding: 0.75rem; 
+            border-radius: 0.5rem; 
+            overflow-x: auto; 
+            font-size: 0.85rem; 
+            margin: 10px 0;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .ai-message ul, .user-message ul { padding-left: 20px; margin: 10px 0; list-style-type: disc; }
+        .ai-message li, .user-message li { margin-bottom: 5px; }
     </style>
 </head>
 <body>
     <div class="chat-container">
         <div class="chat-header">
-            <i class="fas fa-palette text-2xl"></i>
-            <span>AI Image Creator (Puter.js)</span>
+            <div class="flex items-center gap-3">
+                <i class="fas fa-gem text-indigo-600 text-2xl"></i>
+                <span>YaNAi</span>
+            </div>
+            <span class="text-sm text-gray-500 font-medium">Аллоген</span>
         </div>
         <div id="chatMessages" class="chat-messages">
             <div class="ai-message">
                 <div class="flex items-start">
-                    <i class="fas fa-robot text-purple-600 mr-3 mt-1"></i>
-                    <p class="pt-0.5">Привет! Выберите модель, стиль и качество. Ваш запрос будет преобразован в структурированный промпт, чтобы обеспечить наилучший результат!</p>
+                    <i class="fas fa-robot text-indigo-600 mr-3 mt-1"></i>
+                    <div class="pt-0.5" id="welcomeMessage">
+                        <p>Привет! Я — <strong>YaNAi</strong>, ваш генератор изображений. Выберите модель, стиль и качество. Ваш запрос будет преобразован в структурированный промпт для нейросети!</p>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="input-area">
-            <!-- Выбор Модели и Качества -->
             <div class="flex flex-col sm:flex-row gap-3">
                 <select id="modelSelect" class="select-field flex-1">
                     <option value="gpt-image-1" selected>Модель: GPT Image-1</option>
@@ -265,7 +280,6 @@
                 </select>
             </div>
             
-            <!-- Выбор Стиля -->
             <div class="mt-3">
                  <select id="styleSelect" class="select-field w-full">
                     <option value="">-- Выбрать Стиль (Без стиля) --</option>
@@ -278,6 +292,10 @@
                     <option value="Картина, выполненная масляными красками на холсте. Видны мазки кисти, плотная текстура, глубокие цвета и сильный контраст, характерный для старых мастеров. Глубокая цветовая палитра, импрессионистические детали, классический стиль.">Масло на холсте</option>
                     <option value="Эстетика минималистичного пиксель-арта, 16-битная графика, напоминающая старые консольные игры. Ограниченная палитра, чистые линии, четкие блоки цвета, ретро-стиль, низкое разрешение для ностальгического эффекта, изометрия.">Пиксель-Арт (Ретро)</option>
                     <option value="Сложный и детализированный рисунок тушью. Четкие черные линии, штриховка, высокий контраст. Стиль, используемый в графических романах и классических комиксах, ощущение движения, детализация, мрачные тени.">Рисунок Тушью (Комикс)</option>
+                    <option value="Стилизованное изображение в технике низкополигональной графики (Low Poly). Чистые геометрические формы, угловатые края, минималистичная палитра и плоские цвета, создающие ощущение трехмерной модели, оптимизированной для ретро-игр, с использованием приглушенных, но ярких оттенков.">Low Poly Искусство</option>
+                    <option value="Легкий, воздушный рисунок акварелью на текстурированной бумаге. Мягкие, расплывчатые края, полупрозрачные слои цвета, которые сливаются друг с другом, создавая эффект свежести и нежности, с заметными брызгами и подтеками краски, ручная работа.">Акварель</option>
+                    <option value="Сложная и детализированная иллюстрация в стиле стимпанк. Комбинация викторианской эстетики и футуристических механизмов на основе латуни, меди и дерева. Множество шестеренок, паровых двигателей и кожаных элементов, теплые сепия-оттенки, высокое разрешение.">Стимпанк Иллюстрация</option>
+                    <option value="Изображение, выполненное масляной пастелью. Видимая жирная текстура, яркие, насыщенные цвета, плотное наложение слоев, создающее бархатистый, глубокий эффект, ощущение ручного эскиза, крупные мазки, сильное ощущение света и тени.">Масляная Пастель</option>
                 </select>
             </div>
 
@@ -294,28 +312,35 @@
                     onclick="generateImage()"
                     class="action-button generate-button"
                 >
-                    <i class="fas fa-paper-plane"></i> Отправить
+                    <i class="fas fa-arrow-right text-lg"></i> 
                 </button>
                 <button
                     id="cancelButton"
                     onclick="cancelGeneration()"
                     class="action-button cancel-button hidden"
                 >
-                    <i class="fas fa-times-circle"></i> Отмена
+                    <i class="fas fa-times"></i> Отмена
                 </button>
             </div>
-            <!-- Предварительный просмотр промпта -->
-            <div id="promptPreview" class="prompt-preview hidden"></div>
             
             <div id="statusMessage" class="status-message hidden">
                 <i class="fas fa-spinner fa-spin"></i>
                 <span>Генерация изображения...</span>
             </div>
-            <div id="errorMessage" class="error-message hidden"></div>
+            <div id="errorMessage" class="text-red-600 text-sm mt-3 hidden"></div>
         </div>
     </div>
 
     <script>
+        // Инициализация Marked.js для безопасности и правильного отображения Markdown
+        marked.setOptions({
+            gfm: true,
+            breaks: true,
+            sanitize: true,
+            smartLists: true,
+            smartypants: false,
+        });
+
         const promptInput = document.getElementById('promptInput');
         const modelSelect = document.getElementById('modelSelect');
         const qualitySelect = document.getElementById('qualitySelect');
@@ -325,28 +350,9 @@
         const chatMessages = document.getElementById('chatMessages');
         const statusMessage = document.getElementById('statusMessage');
         const errorMessage = document.getElementById('errorMessage');
-        const promptPreview = document.getElementById('promptPreview'); // Новый элемент
 
         let isCancellationRequested = false;
         let abortController = null;
-
-        // Обновление предпросмотра промпта при вводе или смене стиля
-        function updatePromptPreview() {
-            const prompt = promptInput.value.trim();
-            const style = styleSelect.value.trim();
-            const styleName = styleSelect.options[styleSelect.selectedIndex].text;
-
-            if (prompt || style) {
-                const finalPrompt = `{style: "${style}", prompt: "${prompt}"}`;
-                promptPreview.textContent = finalPrompt;
-                promptPreview.classList.remove('hidden');
-            } else {
-                promptPreview.classList.add('hidden');
-            }
-        }
-        
-        promptInput.addEventListener('input', updatePromptPreview);
-        styleSelect.addEventListener('change', updatePromptPreview);
 
         function scrollToBottom() {
             chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -362,27 +368,31 @@
                 messageDiv.classList.add('flex', 'items-start', 'justify-end');
                 const contentWrapper = document.createElement('div');
                 contentWrapper.classList.add('pt-0.5', 'order-1');
-                contentWrapper.innerHTML = content.replace(/\n/g, '<br>');
+                contentWrapper.innerHTML = marked.parse(content);
                 messageDiv.appendChild(contentWrapper);
                 messageDiv.appendChild(icon);
             } else {
                 messageDiv.classList.add('flex', 'items-start');
                 const icon = document.createElement('i');
-                icon.classList.add('fas', 'fa-robot', 'text-purple-600', 'mr-3', 'mt-1');
+                icon.classList.add('fas', 'fa-robot', 'text-indigo-600', 'mr-3', 'mt-1');
                 messageDiv.appendChild(icon);
 
                 if (typeof content === 'string') {
-                    const contentWrapper = document.createElement('p');
+                    const contentWrapper = document.createElement('div');
                     contentWrapper.classList.add('pt-0.5');
-                    contentWrapper.innerHTML = content;
+                    contentWrapper.innerHTML = marked.parse(content);
                     messageDiv.appendChild(contentWrapper);
                 } else {
                     const contentWrapper = document.createElement('div');
                     contentWrapper.classList.add('flex', 'flex-col', 'gap-1');
+                    
                     const textNode = document.createElement('p');
                     textNode.innerHTML = 'Вот ваше сгенерированное изображение:';
-                    contentNode.classList.add('pt-0.5');
-                    contentWrapper.appendChild(textNode);
+                    textNode.classList.add('pt-0.5');
+                    
+                    const textWrapper = document.createElement('div');
+                    textWrapper.appendChild(textNode);
+                    contentWrapper.appendChild(textWrapper);
                     
                     const imgWrapper = document.createElement('div');
                     imgWrapper.classList.add('ai-image-wrapper');
@@ -438,13 +448,12 @@
         function cancelGeneration() {
             isCancellationRequested = true;
             if (abortController) {
-                // Пытаемся отменить fetch-запрос, если API это поддерживает
                 abortController.abort();
             }
             
             hideStatus();
             hideErrorMessage();
-            addMessage('ai', 'Генерация изображения отменена пользователем.');
+            addMessage('ai', '*Генерация изображения была **отменена** пользователем.*');
             enableControls();
         }
 
@@ -456,18 +465,40 @@
             const styleName = styleSelect.options[styleSelect.selectedIndex].text;
 
             hideErrorMessage();
-            promptPreview.classList.add('hidden'); // Скрываем предпросмотр после отправки
 
             if (!prompt) {
                 showErrorMessage('Пожалуйста, введите описание для генерации изображения.');
                 return;
             }
 
-            // Формируем структурированный промпт для отправки в Puter.js
             const finalPrompt = `{style: "${style.replace(/"/g, '\\"')}", prompt: "${prompt.replace(/"/g, '\\"')}"}`;
 
-            // Формируем текст для отображения в чате
-            const userMessageText = `**Ваш запрос:** ${prompt}\n**Выбранный Стиль:** ${styleName}\n**Сформированный промпт для AI:** \n<div class="prompt-preview">${finalPrompt}</div>`;
+            let structuredPromptDisplay;
+            try {
+                // Пытаемся безопасно парсить и форматировать для отображения
+                // Используем небольшую хитрость для форматирования JSON-подобной строки, если она соответствует минимальным требованиям
+                let tempJsonString = finalPrompt.replace(/([\w]+):/g, '"$1":');
+                // Добавляем очистку от потенциальных экранированных кавычек, которые могут мешать парсингу JSON
+                tempJsonString = tempJsonString.replace(/\\"/g, '"');
+                
+                // Проверяем, начинается ли и заканчивается ли строка фигурными скобками
+                if (!tempJsonString.startsWith('{') || !tempJsonString.endsWith('}')) {
+                     tempJsonString = '{' + tempJsonString.substring(1, tempJsonString.length - 1) + '}';
+                }
+
+                const parsed = JSON.parse(tempJsonString);
+                structuredPromptDisplay = JSON.stringify(parsed, null, 2).replace(/"/g, ''); // Удаляем кавычки для чистоты JSON-подобного стиля
+            } catch (e) {
+                structuredPromptDisplay = finalPrompt; // Если парсинг не удался, отображаем исходную строку
+            }
+
+            const userMessageText = 
+                `**Ваш запрос:** ${prompt}\n\n` + 
+                `**Выбранный Стиль:** *${styleName}*\n\n` + 
+                `**Сформированный промпт для AI:** \n\n` +
+                '```json\n' + 
+                structuredPromptDisplay +
+                '\n```';
             
             addMessage('user', userMessageText);
             promptInput.value = '';
@@ -484,11 +515,10 @@
                     quality: quality,
                 };
 
-                // Отправляем структурированный промпт
                 const imageElement = await puter.ai.txt2img(finalPrompt, options);
                 
                 if (!isCancellationRequested) {
-                    imageElement.classList.add('w-full', 'h-auto');
+                    imageElement.classList.add('w-full', 'h-auto', 'rounded-lg');
                     addMessage('ai', imageElement);
                 }
 
@@ -499,7 +529,7 @@
                     console.error('Ошибка генерации изображения:', error);
                     const errorText = error.message || 'Произошла неизвестная ошибка при генерации изображения.';
                     showErrorMessage(`Ошибка: ${errorText}`);
-                    addMessage('ai', `<span class="font-semibold text-red-500">Ошибка:</span> Не удалось сгенерировать изображение. ${errorText}`);
+                    addMessage('ai', `*<span class="font-semibold text-red-500">Ошибка:</span> Не удалось сгенерировать изображение. Пожалуйста, проверьте консоль для получения подробной информации. (${errorText})*`);
                 }
             } finally {
                 hideStatus();
